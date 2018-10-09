@@ -86,4 +86,5 @@ def run(server_class=HTTPServer, handler_class=S):
     logging.info('Stopping httpd...\n')
 
 if __name__ == '__main__':
+    popen("pip3 install youtube-dl --upgrade > /dev/null")
     run()
