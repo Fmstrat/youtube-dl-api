@@ -19,6 +19,7 @@ docker-compose.yml:
       - PORT=8080
       - TOKEN=037816e898d2497b8a93e3be4d42ada9
       - EXTHOST=https://<myhost>.<mydomain>.<tld>:<myport>
+      - FORMAT=%(title)s - %(uploader)s - %(id)s.%(ext)s
     restart: always
 ```
 
@@ -27,6 +28,8 @@ A token can be any random string, but you can generate them here: https://www.gu
 The external host variable should be whatever URL is used to access the service remotely.
 
 The `/data` volume is where videos are downloaded to.
+
+`FORMAT` is optional and can be used to control the filename format for `youtube-dl`.
 
 ## Step 2: Secure with SSL (optional, but recommended)
 I recommend using `nginx` for this. Below is a sample docker compose and a sample nginx config if you use Lets Encrypt for SSL.

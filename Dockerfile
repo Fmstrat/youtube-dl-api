@@ -5,6 +5,7 @@ ENV PYTHONUNBUFFERED=0
 ENV PORT=8080
 ENV TOKEN=mytoken
 ENV EXTHOST=http://localhost
+ENV FORMAT="%(title)s - %(uploader)s - %(id)s.%(ext)s"
 
 RUN set -xe \
     && apk add --no-cache ca-certificates \

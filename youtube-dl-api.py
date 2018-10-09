@@ -5,9 +5,19 @@ from urllib.parse import parse_qs
 from os import popen, environ
 import threading
 
-port = int(environ['PORT'])
-hosttoken = environ['TOKEN']
-exthost = environ['EXTHOST']
+port = 8080
+hosttoken = "mytoken"
+exthost = "http://localhost"
+dlformat = "%(title)s - %(uploader)s - %(id)s.%(ext)s"
+
+if "PORT" in environ:
+    port = int(environ['PORT'])
+if "TOKEN" in environ:
+    hosttoken = environ['TOKEN']
+if "EXTHOST" in environ:
+    exthost = environ['EXTHOST']
+if "FORMAT" in environ:
+    dlformat = environ['FORMAT']
 
 class S(BaseHTTPRequestHandler):
     def _set_response(self):
@@ -70,7 +80,7 @@ def bookmarklet():
     return html
 
 def download(url):
-    cmd = 'cd /data;youtube-dl -q --no-warnings --no-mtime -o "%(title)s - %(uploader)s - %(id)s.%(ext)s" "' + url + '"'
+    cmd = 'cd /data;youtube-dl -q --no-warnings --no-mtime -o "' + dlformat + '" "' + url + '"'
     popen(cmd)
 
 def run(server_class=HTTPServer, handler_class=S):
