@@ -70,7 +70,7 @@ def bookmarklet():
     return html
 
 def download(url):
-    cmd = 'cd /data;youtube-dl -q --no-warnings --no-mtime -o "%(uploader)s - %(title)s - %(id)s.%(ext)s" "' + url + '"'
+    cmd = 'cd /data;youtube-dl -q --no-warnings --no-mtime -o "%(title)s - %(uploader)s - %(id)s.%(ext)s" "' + url + '"'
     popen(cmd)
 
 def run(server_class=HTTPServer, handler_class=S):
