@@ -65,7 +65,7 @@ def bookmarklet():
     html = ""
     html += "<head><title>Watch Later</title></head>"
     html += "<body>"
-    html += "<a href='javascript:location.href=\""+exthost+"?token="+hosttoken+"&url=\"+encodeURIComponent(location.href);alert(\"test\")'>Watch Later</a>"
+    html += "<a href='javascript:location.href=\""+exthost+"?token="+hosttoken+"&url=\"+encodeURIComponent(location.href)'>Watch Later</a>"
     html += "</body>"
     return html
 
