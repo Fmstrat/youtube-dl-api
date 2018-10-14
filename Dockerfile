@@ -1,5 +1,5 @@
 FROM alpine
-MAINTAINER kev <noreply@easypi.pro>
+MAINTAINER nospam <noreply@nospam.nospam>
 
 ENV PYTHONUNBUFFERED=0
 ENV PORT=8080
