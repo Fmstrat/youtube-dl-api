@@ -35,7 +35,7 @@ class S(BaseHTTPRequestHandler):
                 if "url" in data:
                     url = data["url"][0]
                     if '"' not in url:
-                        cmd = 'youtube-dl -qs --no-warnings "' + url + '" |grep ERROR'
+                        cmd = 'youtube-dl --no-playlist -qs --no-warnings "' + url + '" |grep ERROR'
                         result = popen('DATA=$('+cmd+');echo -n $DATA').read()
                         if result == "":
                             threading.Thread(target=download, args=(url,)).start()
@@ -80,7 +80,7 @@ def bookmarklet():
     return html
 
 def download(url):
-    cmd = 'cd /data;youtube-dl -q --no-warnings --no-mtime -o "' + dlformat + '" "' + url + '"'
+    cmd = 'cd /data;youtube-dl --no-playlist -q --no-warnings --no-mtime -o "' + dlformat + '" "' + url + '"'
     popen(cmd)
 
 def run(server_class=HTTPServer, handler_class=S):
