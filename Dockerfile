@@ -12,6 +12,7 @@ RUN set -xe \
                           ffmpeg \
                           openssl \
                           python3 \
+                          py3-pip \
     && pip3 install youtube-dl
 
 COPY youtube-dl-api.py /youtube-dl-api.py
