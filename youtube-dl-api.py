@@ -4,11 +4,14 @@ import logging
 from urllib.parse import parse_qs
 from os import popen, environ
 import threading
+import subprocess
+import sys
 
 port = 8080
 hosttoken = "mytoken"
 exthost = "http://localhost"
 dlformat = "%(title)s - %(uploader)s - %(id)s.%(ext)s"
+pip_args = "install youtube-dl --upgrade"
 
 if "PORT" in environ:
     port = int(environ['PORT'])
@@ -83,6 +86,9 @@ def download(url):
     cmd = 'cd /data;youtube-dl --no-playlist -q --no-warnings --no-mtime -o "' + dlformat + '" "' + url + '"'
     popen(cmd)
 
+def install_youtube_dl():
+    subprocess.check_call([sys.executable, "-m", "pip"] + pip_args.split(' '))
+
 def run(server_class=HTTPServer, handler_class=S):
     logging.basicConfig(level=logging.INFO)
     server_address = ('', port)
@@ -96,5 +102,5 @@ def run(server_class=HTTPServer, handler_class=S):
     logging.info('Stopping httpd...\n')
 
 if __name__ == '__main__':
-    popen("pip3 install youtube-dl --upgrade > /dev/null")
+    install_youtube_dl()
     run()
