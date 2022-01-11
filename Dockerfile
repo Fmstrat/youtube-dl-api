@@ -13,10 +13,12 @@ RUN set -xe \
                           openssl \
                           python3 \
                           py3-pip \
-    && pip3 install youtube-dl
+                          curl
 
 COPY youtube-dl-api.py /youtube-dl-api.py
-RUN chmod +x /youtube-dl-api.py
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/bin/youtube-dl &&\
+    chmod +x /usr/bin/youtube-dl &&\
+    chmod +x /youtube-dl-api.py
 
 WORKDIR /data
 
