@@ -2,22 +2,24 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import logging
 from urllib.parse import parse_qs
-from os import popen, environ
+from time import sleep
 import threading
+import os
+from pathlib import Path
 
 port = 8080
 hosttoken = "mytoken"
 exthost = "http://localhost"
 dlformat = "%(title)s - %(uploader)s - %(id)s.%(ext)s"
 
-if "PORT" in environ:
-    port = int(environ['PORT'])
-if "TOKEN" in environ:
-    hosttoken = environ['TOKEN']
-if "EXTHOST" in environ:
-    exthost = environ['EXTHOST']
-if "FORMAT" in environ:
-    dlformat = environ['FORMAT']
+if "PORT" in os.environ:
+    port = int(os.environ['PORT'])
+if "TOKEN" in os.environ:
+    hosttoken = os.environ['TOKEN']
+if "EXTHOST" in os.environ:
+    exthost = os.environ['EXTHOST']
+if "FORMAT" in os.environ:
+    dlformat = os.environ['FORMAT']
 
 class S(BaseHTTPRequestHandler):
     def _set_response(self):
@@ -36,10 +38,23 @@ class S(BaseHTTPRequestHandler):
                     url = data["url"][0]
                     if '"' not in url:
                         cmd = 'youtube-dl --no-playlist -qs --no-warnings "' + url + '" |grep ERROR'
-                        result = popen('DATA=$('+cmd+');echo -n $DATA').read()
+                        result = os.popen('DATA=$('+cmd+');echo -n $DATA').read()
                         if result == "":
+                            cmd = 'youtube-dl --no-playlist -qs --no-warnings --get-filename -o "' + dlformat + '" "' + url + '"'
+                            filename = os.popen('DATA=$('+cmd+');echo -n $DATA').read()
                             threading.Thread(target=download, args=(url,)).start()
-                            self.wfile.write(success().encode('utf-8'))
+                            sleep(6)
+                            found = False
+                            search = os.path.splitext(filename)[0] + "*"
+                            print('Checking for file: ' + search, flush=True)
+                            for path in Path("/data/").glob(search):
+                                print('Found file: ' + search, flush=True)
+                                found = True
+                                break
+                            if found:
+                                self.wfile.write(success().encode('utf-8'))
+                            else:
+                                self.wfile.write(unknown().encode('utf-8'))
                         else:
                             self.wfile.write(failed().encode('utf-8'))
                     else:
@@ -71,6 +86,14 @@ def failed():
     html += "</body>"
     return html
 
+def unknown():
+    html = ""
+    html += "<head><title>Watch Later</title></head>"
+    html += "<body>"
+    html += "<center>Video did not download for unknown reason.</center>"
+    html += "</body>"
+    return html
+
 def bookmarklet():
     html = ""
     html += "<head><title>Watch Later</title></head>"
@@ -81,7 +104,7 @@ def bookmarklet():
 
 def download(url):
     cmd = 'cd /data;youtube-dl --no-playlist -q --no-warnings --no-mtime -o "' + dlformat + '" "' + url + '"'
-    popen(cmd)
+    os.popen(cmd)
 
 def run(server_class=HTTPServer, handler_class=S):
     logging.basicConfig(level=logging.INFO)
@@ -97,3 +120,4 @@ def run(server_class=HTTPServer, handler_class=S):
 
 if __name__ == '__main__':
     run()
+
