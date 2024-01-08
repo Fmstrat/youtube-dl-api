@@ -46,15 +46,18 @@ class S(BaseHTTPRequestHandler):
                             sleep(6)
                             found = False
                             search = os.path.splitext(filename)[0] + "*"
-                            print('Checking for file: ' + search, flush=True)
-                            for path in Path("/data/").glob(search):
-                                print('Found file: ' + search, flush=True)
-                                found = True
-                                break
-                            if found:
-                                self.wfile.write(success().encode('utf-8'))
+                            if search == "*":
+                                self.wfile.write(failed().encode('utf-8'))
                             else:
-                                self.wfile.write(unknown().encode('utf-8'))
+                                print('Checking for file: ' + search, flush=True)
+                                for path in Path("/data/").glob(search):
+                                    print('Found file: ' + search, flush=True)
+                                    found = True
+                                    break
+                                if found:
+                                    self.wfile.write(success().encode('utf-8'))
+                                else:
+                                    self.wfile.write(unknown().encode('utf-8'))
                         else:
                             self.wfile.write(failed().encode('utf-8'))
                     else:
