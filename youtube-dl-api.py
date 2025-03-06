@@ -11,6 +11,7 @@ port = 8080
 hosttoken = "mytoken"
 exthost = "http://localhost"
 dlformat = "%(title)s - %(uploader)s - %(id)s.%(ext)s"
+youtubecookiefile = ""
 
 if "PORT" in os.environ:
     port = int(os.environ['PORT'])
@@ -20,6 +21,8 @@ if "EXTHOST" in os.environ:
     exthost = os.environ['EXTHOST']
 if "FORMAT" in os.environ:
     dlformat = os.environ['FORMAT']
+if "YOUTUBE_COOKIE_FILE" in os.environ:
+    youtubecookiefile = os.environ['YOUTUBE_COOKIE_FILE']
 
 class S(BaseHTTPRequestHandler):
     def _set_response(self):
@@ -37,23 +40,29 @@ class S(BaseHTTPRequestHandler):
                 if "url" in data:
                     url = data["url"][0]
                     if '"' not in url:
-                        cmd = 'youtube-dl --no-playlist -qs --no-warnings "' + url + '" |grep ERROR'
+                        rootcmd = 'youtube-dl --no-playlist -qs --no-warnings'
+                        if 'youtube.com' in url and youtubecookiefile != "":
+                            rootcmd += ' --cookies ' + youtubecookiefile
+                        cmd = rootcmd + ' "' + url + '" |grep ERROR'
                         result = os.popen('DATA=$('+cmd+');echo -n $DATA').read()
                         if result == "":
-                            cmd = 'youtube-dl --no-playlist -qs --no-warnings --get-filename -o "' + dlformat + '" "' + url + '"'
+                            cmd = rootcmd + ' --get-filename -o "' + dlformat + '" "' + url + '"'
                             filename = os.popen('DATA=$('+cmd+');echo -n $DATA').read()
                             threading.Thread(target=download, args=(url,)).start()
-                            sleep(6)
-                            found = False
                             search = os.path.splitext(filename)[0] + "*"
                             if search == "*":
                                 self.wfile.write(failed().encode('utf-8'))
                             else:
-                                print('Checking for file: ' + search, flush=True)
-                                for path in Path("/data/").glob(search):
-                                    print('Found file: ' + search, flush=True)
-                                    found = True
-                                    break
+                                found = False
+                                for attempt in range(10):
+                                    sleep(1)
+                                    print(f'Checking for file (attempt {attempt + 1}): ' + search, flush=True)
+                                    for path in Path("/data/").glob(search):
+                                        print('Found file: ' + search, flush=True)
+                                        found = True
+                                        break
+                                    if found:
+                                        break
                                 if found:
                                     self.wfile.write(success().encode('utf-8'))
                                 else:
