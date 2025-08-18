@@ -5,6 +5,7 @@ from urllib.parse import parse_qs
 from time import sleep
 import threading
 import os
+import re
 from pathlib import Path
 
 port = 8080
@@ -49,7 +50,8 @@ class S(BaseHTTPRequestHandler):
                             cmd = rootcmd + ' --get-filename -o "' + dlformat + '" "' + url + '"'
                             filename = os.popen('DATA=$('+cmd+');echo -n $DATA').read()
                             threading.Thread(target=download, args=(url,)).start()
-                            search = os.path.splitext(filename)[0] + "*"
+                            base = os.path.splitext(filename)[0]
+                            search = re.sub(r'([\[\]?])', lambda m: {'[':'[[]', ']':'[]]', '?':'[?]'}[m.group()], base) + "*"
                             if search == "*":
                                 self.wfile.write(failed().encode('utf-8'))
                             else:
