@@ -20,6 +20,7 @@ docker-compose.yml:
       - TOKEN=037816e898d2497b8a93e3be4d42ada9
       - EXTHOST=https://<myhost>.<mydomain>.<tld>:<myport>
       - FORMAT=%(title)s - %(uploader)s - %(id)s.%(ext)s
+      - UPDATE_TO_MASTER=true
     restart: always
 ```
 
@@ -29,7 +30,9 @@ The external host variable should be whatever URL is used to access the service 
 
 The `/data` volume is where videos are downloaded to.
 
-`FORMAT` is optional and can be used to control the filename format for `youtube-dl`.
+`FORMAT` is optional and can be used to control the filename format for `yt-dlp`.
+
+Setting `UPDATE_TO_MASTER` to `true` will update `yt-dlp` to the `master` branch on start.
 
 ## Step 2: Secure with SSL (optional, but recommended)
 I recommend using `nginx` for this. Below is a sample docker compose and a sample nginx config if you use Lets Encrypt for SSL.

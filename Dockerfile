@@ -15,14 +15,14 @@ RUN set -xe \
                           py3-pip \
                           curl
 
+COPY init.sh /init.sh
 COPY youtube-dl-api.py /youtube-dl-api.py
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/bin/youtube-dl &&\
     chmod +x /usr/bin/youtube-dl &&\
     chmod +x /youtube-dl-api.py &&\
-    youtube-dl --update-to master
+    chmod +x /init.sh
 
 WORKDIR /data
 
-ENTRYPOINT ["/youtube-dl-api.py"]
-#ENTRYPOINT ["python3"]
+ENTRYPOINT ["/init.sh"]
 CMD ["8081"]
