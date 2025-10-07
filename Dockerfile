@@ -20,7 +20,8 @@ COPY youtube-dl-api.py /youtube-dl-api.py
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/bin/youtube-dl &&\
     chmod +x /usr/bin/youtube-dl &&\
     chmod +x /youtube-dl-api.py &&\
-    chmod +x /init.sh
+    chmod +x /init.sh &&\
+    youtube-dl --update-to master
 
 WORKDIR /data
 
