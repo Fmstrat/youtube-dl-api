@@ -23,6 +23,8 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
     chmod +x /init.sh &&\
     youtube-dl --update-to master
 
+RUN curl -fsSL https://deno.land/install.sh | sh
+
 WORKDIR /data
 
 ENTRYPOINT ["/init.sh"]

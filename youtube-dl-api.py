@@ -41,7 +41,7 @@ class S(BaseHTTPRequestHandler):
                 if "url" in data:
                     url = data["url"][0]
                     if '"' not in url:
-                        rootcmd = 'youtube-dl --no-playlist -qs --no-warnings'
+                        rootcmd = 'youtube-dl --remote-components ejs:npm --no-playlist -qs --no-warnings'
                         if 'youtube.com' in url and youtubecookiefile != "":
                             rootcmd += ' --cookies ' + youtubecookiefile
                         cmd = rootcmd + ' "' + url + '" |grep ERROR'
