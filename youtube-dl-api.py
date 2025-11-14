@@ -41,10 +41,13 @@ class S(BaseHTTPRequestHandler):
                 if "url" in data:
                     url = data["url"][0]
                     if '"' not in url:
+                        cookies = ''
                         rootcmd = 'youtube-dl --remote-components ejs:npm --no-playlist -qs --no-warnings'
-                        if 'youtube.com' in url and youtubecookiefile != "":
-                            rootcmd += ' --cookies ' + youtubecookiefile
+                        if "cookies" in data and data["cookies"][0] == "true":
+                            if 'youtube.com' in url and youtubecookiefile != "":
+                                rootcmd += ' --cookies ' + youtubecookiefile
                         cmd = rootcmd + ' "' + url + '" |grep ERROR'
+                        print(f'Running: ' + cmd, flush=True)
                         result = os.popen('DATA=$('+cmd+');echo -n $DATA').read()
                         if result == "":
                             cmd = rootcmd + ' --get-filename -o "' + dlformat + '" "' + url + '"'

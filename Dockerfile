@@ -6,7 +6,8 @@ ENV TOKEN=mytoken
 ENV EXTHOST=http://localhost
 ENV FORMAT="%(title)s - %(uploader)s - %(id)s.%(ext)s"
 
-RUN set -xe \
+RUN \
+    set -xe \
     && apk add --no-cache ca-certificates \
                           ffmpeg \
                           openssl \
@@ -15,13 +16,16 @@ RUN set -xe \
                           curl \
                           deno
 
+RUN \
+    curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/bin/youtube-dl &&\
+    chmod +x /usr/bin/youtube-dl &&\
+    youtube-dl --update-to master
+
 COPY init.sh /init.sh
 COPY youtube-dl-api.py /youtube-dl-api.py
-RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/bin/youtube-dl &&\
-    chmod +x /usr/bin/youtube-dl &&\
+RUN \
     chmod +x /youtube-dl-api.py &&\
-    chmod +x /init.sh &&\
-    youtube-dl --update-to master
+    chmod +x /init.sh
 
 WORKDIR /data
 
