@@ -43,6 +43,35 @@ def bookmarklet():
         "</body>"
     )
 
+def download_page():
+    return (
+        "<!DOCTYPE html>"
+        "<html>"
+        "<head><title>Downloading...</title></head>"
+        "<body>"
+        "<div id='output'>Starting download...</div>"
+        "<script>"
+        "   const url = new URL(window.location.href);"
+        "   const params = new URLSearchParams(url.search);"
+        "   const token = params.get('token');"
+        "   const videoUrl = params.get('url');"
+        "   const output = document.getElementById('output');"
+        "   const eventSource = new EventSource(`/download?token=${token}&url=${videoUrl}`);"
+        "   eventSource.onmessage = function(event) {"
+        "   output.innerHTML += '<br>' + event.data;"
+        "   document.scrollingElement.scrollTo({"
+        "       top: document.scrollingElement.scrollHeight,"
+        "       behavior: 'smooth'"
+        "   });"
+        "};"
+        "eventSource.onerror = function(event) {"
+        "  output.innerHTML += '<br>Connection closed.';"
+        "};"
+        "</script>"
+        "</body>"
+        "</html>"
+    )
+
 
 # -----------------------------
 # HTTP HANDLER WITH STREAMING
@@ -62,8 +91,6 @@ class S(BaseHTTPRequestHandler):
             self.wfile.write(b"\r\n")
             self.wfile.flush()
         except (BrokenPipeError, ConnectionResetError):
-            # print(f'Error: send_chunk', flush=True)
-            # raise
             pass
 
     # Finish chunked stream
@@ -75,7 +102,13 @@ class S(BaseHTTPRequestHandler):
         try:
             logging.info("GET %s", self.path)
 
-            data = parse_qs(self.path[2:])  # strip /?
+            clean_path = self.path
+            if self.path.startswith('/download?'):
+                clean_path = clean_path[len('/download?'):]
+            else:
+                clean_path = clean_path[2:]
+            data = parse_qs(clean_path)
+            logging.info("Data variable: %s", data)
             token = data.get("token", [""])[0]
 
             # -------------------------
@@ -97,19 +130,60 @@ class S(BaseHTTPRequestHandler):
             url = data["url"][0]
 
             # -------------------------
-            # BEGIN STREAMING RESPONSE
+            # HANDLE DOWNLOAD REQUEST
+            # -------------------------
+            if self.path.startswith("/download"):
+                self.handle_download(data)
+                return
+
+            # -------------------------
+            # SHOW DOWNLOAD PAGE
             # -------------------------
             self.send_response(200)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Content-Type", "text/html")
+            self.end_headers()
+            self.wfile.write(download_page().encode())
+            return
+
+        except (BrokenPipeError, ConnectionResetError):
+            # Client disconnected before finishing
+            logging.info("Client disconnected during streaming")
+            # subprocess already terminated in inner except
+            return
+
+        except Exception as e:
+            logging.info("Error: unexpected error during request")
+            self.send_error(500)
+
+    def handle_download(self, data):
+        try:
+            token = data.get("token", [""])[0]
+            url = data["url"][0]
+
+            # -------------------------
+            # AUTHENTICATION
+            # -------------------------
+            if token != hosttoken:
+                self.send_response(403)
+                self.end_headers()
+                return
+
+            # -------------------------
+            # BEGIN SERVER SENT EVENTS RESPONSE
+            # -------------------------
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
             self.send_header("Cache-Control", "no-cache")
-            self.send_header("Transfer-Encoding", "chunked")
+            self.send_header("Connection", "keep-alive")
+            self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
 
             def out(msg):
                 try:
-                    self.send_chunk(msg)
+                    self.wfile.write(f"data: {msg}\n\n".encode("utf-8"))
+                    self.wfile.flush()
                 except (BrokenPipeError, ConnectionResetError):
-                    print(f'Error: out', flush=True)
+                    logging.info("Error: out")
                     raise  # will be caught by outer try
 
             out(f"Starting download for: {url}")
@@ -144,10 +218,10 @@ class S(BaseHTTPRequestHandler):
                     out(line.rstrip())
                 except (BrokenPipeError, ConnectionResetError):
                     # client disconnected, kill process and exit cleanly
-                    print(f'Error: output', flush=True)
-                    # if process.poll() is None:
-                    #     process.terminate()
-                    # return
+                    logging.info("Error: output")
+                    if process.poll() is None:
+                        process.terminate()
+                    return
 
             ret = process.wait()
 
@@ -161,17 +235,13 @@ class S(BaseHTTPRequestHandler):
                 out("STATUS: FAILED")
                 final_page = failed()
 
-            # Stream final HTML
+            # Stream final message
             out("")
             out(final_page)
 
-            # Close chunked stream
-            self.end_chunks()
-
         except (BrokenPipeError, ConnectionResetError):
-            # Client disconnected before finishing
+            # Client disconnected during streaming
             print(f'Client disconnected during streaming', flush=True)
-            # subprocess already terminated in inner except
             return
 
         except Exception as e:
