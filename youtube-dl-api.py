@@ -140,7 +140,7 @@ class S(BaseHTTPRequestHandler):
 
             for line in process.stdout:
                 try:
-                    print(f'yt-dlp: ' + line.rstrip())
+                    print(f'yt-dlp: ' + line.rstrip(), flush=True)
                     out(line.rstrip())
                 except (BrokenPipeError, ConnectionResetError):
                     # client disconnected, kill process and exit cleanly
