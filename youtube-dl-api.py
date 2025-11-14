@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import logging
 from urllib.parse import parse_qs
 import os
@@ -254,7 +254,7 @@ class S(BaseHTTPRequestHandler):
 # -----------------------------
 # SERVER STARTUP
 # -----------------------------
-def run(server_class=HTTPServer, handler_class=S):
+def run(server_class=ThreadingHTTPServer, handler_class=S):
     logging.basicConfig(level=logging.INFO)
     server_address = ("", port)
     httpd = server_class(server_address, handler_class)
