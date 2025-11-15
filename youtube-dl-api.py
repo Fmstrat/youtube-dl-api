@@ -136,7 +136,7 @@ class S(BaseHTTPRequestHandler):
             # HANDLE DOWNLOAD REQUEST
             # -------------------------
             if self.path.startswith("/download"):
-                self.handle_download(data)
+                self.handle_download(data, False)
                 return
 
             # -------------------------
@@ -158,7 +158,7 @@ class S(BaseHTTPRequestHandler):
             logging.info("Error: unexpected error during request")
             self.send_error(500)
 
-    def handle_download(self, data):
+    def handle_download(self, data, forcecookies):
         try:
             token = data.get("token", [""])[0]
             url = data["url"][0]
@@ -169,7 +169,7 @@ class S(BaseHTTPRequestHandler):
             if token != hosttoken:
                 self.send_response(403)
                 self.end_headers()
-                return
+                return False
 
             # -------------------------
             # BEGIN SERVER SENT EVENTS RESPONSE
@@ -186,8 +186,7 @@ class S(BaseHTTPRequestHandler):
                     self.wfile.write(f"data: {msg}\n\n".encode("utf-8"))
                     self.wfile.flush()
                 except (BrokenPipeError, ConnectionResetError):
-                    logging.info("Error: out")
-                    raise  # will be caught by outer try
+                    pass
 
             out(f"Starting download for: {url}")
 
@@ -203,7 +202,7 @@ class S(BaseHTTPRequestHandler):
             ]
 
             # Add cookies if needed
-            if "cookies" in data and data["cookies"][0] == "true":
+            if forcecookies or ("cookies" in data and data["cookies"][0] == "true"):
                 if "youtube.com" in url and youtubecookiefile:
                     cmd += ["--cookies", youtubecookiefile]
                     out("Using YouTube cookies file")
@@ -215,8 +214,11 @@ class S(BaseHTTPRequestHandler):
             # -------------------------
             process = Popen(cmd, stdout=PIPE, stderr=STDOUT, text=True)
 
+            ytsigninrequired = False
             for line in process.stdout:
                 try:
+                    if "Sign in to confirm your age." in line:
+                        ytsigninrequired = True
                     print(f'yt-dlp: ' + line.rstrip(), flush=True)
                     out(line.rstrip())
                 except (BrokenPipeError, ConnectionResetError):
@@ -224,7 +226,7 @@ class S(BaseHTTPRequestHandler):
                     logging.info("Error: output")
                     if process.poll() is None:
                         process.terminate()
-                    return
+                    return False
 
             ret = process.wait()
 
@@ -233,23 +235,32 @@ class S(BaseHTTPRequestHandler):
             # -------------------------
             if ret == 0:
                 out("STATUS: SUCCESS")
+                out("")
                 final_page = success()
+                out(final_page)
             else:
-                out("STATUS: FAILED")
-                final_page = failed()
-
-            # Stream final message
-            out("")
-            out(final_page)
+                if ytsigninrequired and not forcecookies:
+                    out("Retrying with cookies")
+                    try:
+                        self.handle_download(data, True)
+                    except Exception as e:
+                        print(f'Error: unexpected error during recursive request', flush=True)
+                        self.send_error(500)
+                else:
+                    out("STATUS: FAILED")
+                    out("")
+                    final_page = failed()
+                    out(final_page)
 
         except (BrokenPipeError, ConnectionResetError):
             # Client disconnected during streaming
             print(f'Client disconnected during streaming', flush=True)
-            return
+            return False
 
         except Exception as e:
             print(f'Error: unexpected error during request', flush=True)
             self.send_error(500)
+            return False
 
 # -----------------------------
 # SERVER STARTUP
